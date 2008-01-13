@@ -1,0 +1,11 @@
+README for omfsprogs 
+Bob Copeland <me@bobcopeland.com>
+
+This package contains utilities for manipulating OMFS filesystems.
+These programs are very beta.  Watch out.
+
+omfsck: Consistency checker for the filesystem.  Only a few errors may be 
+fixed at this time, and then only by deleting them wholesale.
+
+mkomfs: Makes a simple root directory filesystem on a device or disk image.
+
