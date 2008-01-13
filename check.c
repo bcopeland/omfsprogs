@@ -54,35 +54,133 @@ int check_header(u8 *blk)
 int check_sanity(check_context_t *ctx)
 {
 	omfs_inode_t *inode = ctx->current_inode;
-	if (inode->head.body_size > ctx->omfs_info->super->sys_blocksize)
+	if (swap_be32(inode->head.body_size) > 
+	    swap_be32(ctx->omfs_info->super->sys_blocksize))
 		return 0;
+
 	// check device size here too.
 	return 1;
 }
 
+int check_bitmap(check_context_t *ctx)
+{
+	int i;
+	int is_ok = 1;
+	int bsize, first_blk;
+	omfs_super_t *super = ctx->omfs_info->super;
+	omfs_root_t *root = ctx->omfs_info->root;
+
+	if (!ctx->bitmap)
+		return 0;
+
+	bsize = (swap_be64(super->num_blocks) + 7) / 8;
+	first_blk = swap_be64(root->bitmap) + (bsize + 
+		swap_be32(super->blocksize)-1) / swap_be32(super->blocksize);
+
+	for (i=0; i < first_blk; i++)
+		set_bit(ctx->visited, i);
+
+	for (i=0; i < bsize; i++)
+	{
+		if (ctx->bitmap[i] != ctx->visited[i])
+		{
+			is_ok = 0;
+			printf("Wrong bitmap byte at %d (%02x, %02x)\n", i, 
+					ctx->bitmap[i], ctx->visited[i]);
+		}
+	}
+	if (!is_ok) 
+	{
+		fix_problem(E_BITMAP, ctx);
+	}
+	return 0;
+}
+
+void visit_extents(check_context_t *ctx)
+{
+	struct omfs_extent *oe;
+	struct omfs_extent_entry *entry;
+	u64 last, next;
+	int extent_count, i;
+	u8 *buf;
+
+	next = ctx->block;
+	buf = omfs_get_block(ctx->omfs_info->dev, 
+			ctx->omfs_info->super, next);
+	if (!buf)
+		return;
+
+	oe = (struct omfs_extent *) &buf[OMFS_EXTENT_START];
+
+	for(;;) 
+	{
+		extent_count = swap_be32(oe->extent_count);
+		last = next;
+		next = swap_be64(oe->next);
+		entry = &oe->entry;
+
+		// ignore last entry as it is the terminator
+		for (; extent_count > 1; extent_count--)
+		{
+			u64 start = swap_be64(entry->cluster);
+
+			for (i=0; i<swap_be64(entry->blocks); i++)
+				set_bit(ctx->visited, start + i);
+
+			entry++;
+		}
+
+		set_bit(ctx->visited, last);
+		set_bit(ctx->visited, last+1);
+
+		if (next == ~0)
+			break;
+
+		free(buf);
+		buf = omfs_get_block(ctx->omfs_info->dev, 
+			ctx->omfs_info->super, next);
+		if (!buf)
+			goto err;
+		oe = (struct omfs_extent *) &buf[OMFS_EXTENT_CONT];
+	}
+	free(buf);
+err:
+	return;
+}
+	
 int check_inode(check_context_t *ctx)
 {
+	int i;
 	int ret = 1;
 	omfs_inode_t *inode = ctx->current_inode;
+
+	if (test_bit(ctx->visited, ctx->block))
+	{
+		fix_problem(E_LOOP, ctx);
+		return 0;
+	}
+	for (i=0; i < swap_be32(ctx->omfs_info->super->mirrors); i++)
+		set_bit(ctx->visited, ctx->block + i);
+
 	if (!check_sanity(ctx))
 	{
 		fix_problem(E_INSANE, ctx);
 		return 0;
 	}
-	if (!check_header(inode->data)) 
+	if (!check_header((u8 *)inode)) 
 	{
 		fix_problem(E_HEADER_XOR, ctx);
 	}
-	if (!check_crc(inode->data)) 
+	if (!check_crc((u8 *)inode)) 
 	{
 		fix_problem(E_HEADER_CRC, ctx);
 	}
-	if (inode->head.self != ctx->block)
+	if (swap_be64(inode->head.self) != ctx->block)
 	{
 		fix_problem(E_SELF_PTR, ctx);
 		ret = 0;
 	}
-	if (inode->parent != ctx->parent)
+	if (swap_be64(inode->parent) != ctx->parent)
 	{
 		fix_problem(E_PARENT_PTR, ctx);
 		ret = 0;
@@ -92,23 +190,39 @@ int check_inode(check_context_t *ctx)
 		fix_problem(E_HASH_WRONG, ctx);
 		ret = 0;
 	}
-	if (ctx->bitmap && !test_bit(ctx->bitmap, inode->head.self))
-	{
-		fix_problem(E_BIT_CLEAR, ctx);
-		ret = 0;
-	}
-	clear_bit(ctx->bitmap, inode->head.self);
 	if (inode->type == OMFS_FILE)
 	{
-		// TODO check its extents here
+		visit_extents(ctx);
 	}
 
 	return ret;
 }
 
+static int on_node(dirscan_t *d, dirscan_entry_t *entry, void *user)
+{
+	char *name = escape(entry->inode->name);
+	check_context_t *ctx = (check_context_t *) user;
+
+	printf("inode: %*c%s%c %llx %d %llx %llx\n", 
+		entry->level*2, ' ', name,
+		(entry->inode->type == OMFS_DIR) ? '/' : ' ',
+		swap_be64(entry->inode->head.self), entry->hindex,
+		entry->parent, entry->block); 
+	free(name);
+
+	ctx->current_inode = entry->inode;
+	ctx->block = entry->block;
+	ctx->parent = entry->parent;
+	ctx->hash = entry->hindex;
+	check_inode(ctx);
+
+	return 0;
+}
+
 int check_fs(FILE *fp)
 {
 	check_context_t ctx;
+	int bsize;
 	omfs_super_t super;
 	omfs_root_t root;
 	omfs_info_t info = { 
@@ -128,39 +242,21 @@ int check_fs(FILE *fp)
 		return 0;
 	}
 
-	dirscan_entry_t *entry;
 	ctx.omfs_info = &info;
 	ctx.bitmap = omfs_get_bitmap(&info);
+	bsize = (swap_be64(info.super->num_blocks) + 7) / 8;
+	ctx.visited = calloc(1, bsize);
 
-	dirscan_t *scan = dirscan_begin(&info);
-	if (!scan)
+	if (dirscan_begin(&info, on_node, &ctx) != 0)
 	{
 		fix_problem(E_SCAN, 0);
 		return 0;
 	}
 
-	while ((entry = dirscan_next(scan)))
-	{
-		char *name = escape(entry->inode->name);
-		printf("inode: %*c%s %llx %d %llx %llx\n", 
-			entry->level*2, ' ', name,
-			entry->inode->head.self, entry->hindex,
-			entry->parent, entry->block); 
-		free(name);
-
-		ctx.current_inode = entry->inode;
-		ctx.block = entry->block;
-		ctx.parent = entry->parent;
-		ctx.hash = entry->hindex;
-		check_inode(&ctx);
-
-		dirscan_release_entry(entry);
-	}
-	dirscan_end(scan);
-
-	// TODO check all set bits for real inodes.  If they are there,
-	// move them to root directory with a found-<name>
+	check_bitmap(&ctx);
+	
 	if (ctx.bitmap) 
 		free(ctx.bitmap);
+	free(ctx.visited);
 	return 1;
 }

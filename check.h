@@ -11,6 +11,7 @@ typedef enum
 	E_HEADER_CRC,
 	E_BIT_SET,
 	E_BIT_CLEAR,
+	E_BITMAP,
 	E_HASH_WRONG,
 	E_BLOCKSIZE,
 	E_SYS_BLOCKSIZE,
@@ -24,12 +25,14 @@ typedef enum
 	E_READ_SUPER,
 	E_READ_ROOT,
 	E_INSANE,
-	E_SCAN
+	E_SCAN,
+	E_LOOP
 } check_error_t;
 
 typedef struct check_context
 {
 	u8 *bitmap;
+	u8 *visited;
 	omfs_inode_t *current_inode;
 	omfs_info_t *omfs_info;
 	u64 parent;                /* parent inode number */

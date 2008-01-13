@@ -4,12 +4,6 @@
 #include "stack.h"
 #include "omfs.h"
 
-struct dirscan
-{
-	omfs_info_t *omfs_info;    /* omfs lib context */
-	stack_t *inode_stack;      /* where we are in the traversal */
-}; 
-
 struct dirscan_entry
 {
 	omfs_inode_t *inode;       /* an inode */
@@ -19,12 +13,17 @@ struct dirscan_entry
 	u64 block;                 /* block from which inode was read */
 };
 
+struct dirscan
+{
+	omfs_info_t *omfs_info;    /* omfs lib context */
+	int (*visit) (struct dirscan *, struct dirscan_entry *, void*);
+	void *user_data;
+}; 
+
 typedef struct dirscan dirscan_t;
 typedef struct dirscan_entry dirscan_entry_t;
 
-dirscan_t *dirscan_begin(omfs_info_t *info);
-dirscan_entry_t *dirscan_next(dirscan_t *d);
-void dirscan_release_entry(dirscan_entry_t *entry);
-void dirscan_end(dirscan_t *d);
+int dirscan_begin(omfs_info_t *info, int (*visit)(dirscan_t *, 
+			dirscan_entry_t*, void*), void *user_data);
 
 #endif

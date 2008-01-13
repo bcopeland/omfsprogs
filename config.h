@@ -16,18 +16,18 @@ typedef long long s64;
 #define swap_be32(a) (a)
 #define swap_be16(a) (a)
 #else
-#define swap_be64(a) swap64(a)
-#define swap_be32(a) swap32(a)
-#define swap_be16(a) swap16(a)
+#define swap_be64(a) __swap64(a)
+#define swap_be32(a) __swap32(a)
+#define swap_be16(a) __swap16(a)
 #endif
 
-static inline u16 swap16(u16 a)
+static inline u16 __swap16(u16 a)
 {
 	return (((a & 0xff00) >> 8) | 
 	        ((a & 0x00ff) << 8));
 }
 
-static inline u32 swap32(u32 a)
+static inline u32 __swap32(u32 a)
 {
 	return (((a & 0xff000000U) >> 24) | 
 	        ((a & 0x00ff0000U) >> 8) | 
@@ -35,7 +35,7 @@ static inline u32 swap32(u32 a)
 	        ((a & 0x000000ffU) << 24));
 }
 
-static inline u64 swap64(u64 a)
+static inline u64 __swap64(u64 a)
 {
 	return (((a & 0xff00000000000000ULL) >> 56) |
 		((a & 0x00ff000000000000ULL) >> 40) |

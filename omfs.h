@@ -72,7 +72,6 @@ struct omfs_inode {
 	char fill3[64];
 	char name[OMFS_NAMELEN];
 	u64 size;
-	u8 *data;
 };
 
 struct omfs_extent_entry {

@@ -51,27 +51,27 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 
 	omfs_super_t super = 
 	{
-		.root_block = ROOT_BLK,
-		.num_blocks = blocks,
-		.magic = OMFS_MAGIC,
-		.blocksize = block_size,
-		.mirrors = 2,
-		.sys_blocksize = block_size/4, // ??
+		.root_block = swap_be64(ROOT_BLK),
+		.num_blocks = swap_be64(blocks),
+		.magic = swap_be32(OMFS_MAGIC),
+		.blocksize = swap_be32(block_size),
+		.mirrors = swap_be32(2),
+		.sys_blocksize = swap_be32(block_size/4), // ??
 	};
 
 	omfs_root_t root = 
 	{
-		.head.self = ROOT_BLK,
-		.head.body_size = sizeof(omfs_root_t) - sizeof(struct omfs_header),
+		.head.self = swap_be64(ROOT_BLK),
+		.head.body_size = swap_be32(sizeof(omfs_root_t) - sizeof(struct omfs_header)),
 		.head.version = 1,
 		.head.type = OMFS_INODE_SYSTEM,
 		.head.magic = OMFS_IMAGIC,
 		.num_blocks = super.num_blocks,
-		.root_dir = ROOT_DIR_BLK,
-		.bitmap = BITMAP_BLK,
+		.root_dir = swap_be64(ROOT_DIR_BLK),
+		.bitmap = swap_be64(BITMAP_BLK),
 		.blocksize = super.blocksize,
-		.clustersize = config->cluster_size,
-		.mirrors = super.mirrors,
+		.clustersize = swap_be32(config->cluster_size),
+		.mirrors = swap_be64(super.mirrors),
 	};
 
 	safe_strncpy(super.name, label, OMFS_SUPER_NAMELEN);
@@ -85,38 +85,39 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 
 	// root directory
 	omfs_inode_t root_ino = {
-		.head.self = ROOT_DIR_BLK,
-		.head.body_size = super.sys_blocksize - sizeof(omfs_header_t),
+		.head.self = swap_be64(ROOT_DIR_BLK),
+		.head.body_size = swap_be32(swap_be32(super.sys_blocksize) - sizeof(omfs_header_t)),
 		.head.version = 1,
 		.head.type = OMFS_INODE_NORMAL,
 		.head.magic = OMFS_IMAGIC,
 		.parent = ~0,
 		.sibling = ~0,
-		.ctime = now,
+		.ctime = swap_be64(now),
 		.type = 'D',
-		.one_goes_here = 1
+		.one_goes_here = swap_be32(1)
 	};
 
-	u8 *data = calloc(1, super.sys_blocksize);
+	u8 *data = calloc(1, swap_be32(super.sys_blocksize));
 	if (!data) 
 		return 0;
 
+	memcpy(data, &root_ino, sizeof (omfs_inode_t));
 	memset(data + OMFS_DIR_START, 0xff, 
-		super.sys_blocksize - OMFS_DIR_START);
-
-	root_ino.data = data;
+		swap_be32(super.sys_blocksize) - OMFS_DIR_START);
 
 	info.dev = fp;
 	info.super = &super;
 	info.root = &root;
-	omfs_write_inode(&info, &root_ino);
+	omfs_write_inode(&info, (omfs_inode_t *) data);
+
+	free(data);
 		
 	// free space bitmap.  We already know that blocks 0-5 are 
 	// going to be set; the first available cluster has to take
 	// into account the size of the free space bitmap.
-	int bitmap_size = (super.num_blocks + 7)/8;
-	int first_blk = BITMAP_BLK + (bitmap_size + super.blocksize-1) /
-		super.blocksize;
+	int bitmap_size = (swap_be64(super.num_blocks) + 7)/8;
+	int first_blk = BITMAP_BLK + (bitmap_size + 
+		swap_be32(super.blocksize)-1) / swap_be32(super.blocksize);
 
 	u8 *bitmap = calloc(1, bitmap_size);
 
