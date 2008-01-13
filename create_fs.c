@@ -28,7 +28,7 @@ void clear_dev(FILE *fp, u64 sectors)
 
 	// clear the device
 	 
-	memset(blk, 'z', sizeof(blk));
+	memset(blk, 0, sizeof(blk));
 	for (i=0; i<sectors; i++)
 	{
 		fwrite(blk, 1, sizeof(blk), fp);
@@ -94,7 +94,8 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 		.sibling = ~0,
 		.ctime = swap_be64(now),
 		.type = 'D',
-		.one_goes_here = swap_be32(1)
+		.one_goes_here = swap_be32(1),
+		.size = swap_be64(swap_be32(super.sys_blocksize))
 	};
 
 	u8 *data = calloc(1, swap_be32(super.sys_blocksize));
