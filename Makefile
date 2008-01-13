@@ -1,4 +1,4 @@
-VERSION=0.0.7
+VERSION=0.0.8
 DISTNAME=omfsprogs-$(VERSION)
 DISTFILES=*.[ch] Makefile README COPYING
 TESTFILES=test/*.[ch] test/Makefile
@@ -12,15 +12,21 @@ OMFSCK_OBJS=$(OMFSCK_SRCS:.c=.o) $(COMMON_OBJS)
 MKOMFS_SRCS=mkomfs.c create_fs.c disksize.c
 MKOMFS_OBJS=$(MKOMFS_SRCS:.c=.o) $(COMMON_OBJS)
 
+OMFSDUMP_SRCS=omfsdump.c dump.c
+OMFSDUMP_OBJS=$(OMFSDUMP_SRCS:.c=.o) $(COMMON_OBJS)
+
 CFLAGS=-g -Wall -Wpadded
 
-all: omfsck mkomfs
+all: omfsck mkomfs omfsdump
 
 omfsck: $(OMFSCK_OBJS)
 	gcc -o omfsck $(OMFSCK_OBJS)
 
 mkomfs: $(MKOMFS_OBJS)
 	gcc -o mkomfs $(MKOMFS_OBJS)
+
+omfsdump: $(OMFSDUMP_OBJS)
+	gcc -o omfsdump $(OMFSDUMP_OBJS)
 
 clean:
 	$(RM) omfsck mkomfs *.o

@@ -203,10 +203,11 @@ static int on_node(dirscan_t *d, dirscan_entry_t *entry, void *user)
 	char *name = escape(entry->inode->name);
 	check_context_t *ctx = (check_context_t *) user;
 
-	printf("inode: %*c%s%c %llx %d %llx %llx\n", 
+	printf("inode: %*c%s%c %llx %d %d %llx %llx\n", 
 		entry->level*2, ' ', name,
 		(entry->inode->type == OMFS_DIR) ? '/' : ' ',
 		swap_be64(entry->inode->head.self), entry->hindex,
+		swap_be16(entry->inode->head.crc), 
 		entry->parent, entry->block); 
 	free(name);
 

@@ -11,6 +11,20 @@
 #include "omfs.h"
 #include "crc.h"
 
+static void _omfs_swap_buffer(void *buf, int count)
+{
+#ifdef RTV_HACK
+    // only valid for Replay 4xxx and 5xxx: unconditionally force change 
+    // of endianness
+    int i;
+	u32 *ibuf = (u32 *) buf;
+	count >>= 2;
+
+	for (i=0; i<count; i++)
+		ibuf[i] = __swap32(ibuf[i]);
+#endif
+}
+
 /*
  * Write the superblock to disk
  */
@@ -19,6 +33,7 @@ int omfs_write_super(FILE *dev, struct omfs_super_block *super)
 	int count;
 
 	fseeko(dev, 0LL, SEEK_SET);
+	_omfs_swap_buffer(super, sizeof(struct omfs_super_block));
 	count = fwrite(super, 1, sizeof(struct omfs_super_block), dev);
 
 	if (count < sizeof(struct omfs_super_block))
@@ -39,6 +54,8 @@ int omfs_read_super(FILE *dev, struct omfs_super_block *ret)
 
 	if (count < sizeof(struct omfs_super_block))
 		return -1;
+
+	_omfs_swap_buffer(ret, count);
 	return 0;
 }
 
@@ -46,6 +63,7 @@ static int _omfs_write_block(FILE *dev, struct omfs_super_block *sb,
 		u64 block, u8* buf, size_t len)
 {
 	int i, count;
+	_omfs_swap_buffer(buf, len);
 	for (i=0; i<swap_be32(sb->mirrors); i++)
 	{
 	    fseeko(dev, (block + i) * swap_be32(sb->blocksize), SEEK_SET);
@@ -71,6 +89,7 @@ static int _omfs_read_block(FILE *dev, struct omfs_super_block *sb,
 	if (count < swap_be32(sb->blocksize))
 		return -1;
 
+	_omfs_swap_buffer(buf, count);
 	return 0;
 }
 

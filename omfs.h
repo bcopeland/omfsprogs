@@ -10,6 +10,7 @@
 #define OMFS_DIR 'D'
 #define OMFS_FILE 'F'
 #define OMFS_INODE_NORMAL 'e'
+#define OMFS_INODE_CONTINUATION 'c'
 #define OMFS_INODE_SYSTEM 's'
 #define OMFS_SUPER_NAMELEN 64
 #define OMFS_NAMELEN 256
