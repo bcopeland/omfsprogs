@@ -114,6 +114,27 @@ assertz $?
 rm create.img
 
 ###############################################################
+# check truncate
+###############################################################
+begin "truncate"
+cp clean.img truncate.img
+mount truncate.img
+
+dd if=/dev/urandom of=tmp/31 bs=$BSIZE count=10 2>/dev/null
+touch tmp/10
+
+# only shrink supported now
+assert_eq_s `stat -c %s tmp/31` 40960
+> tmp/31
+
+assert_eq_s `stat -c %s tmp/31` 0
+
+unmount truncate.img
+$OMFSPROGS/omfsck -q truncate.img
+assertz $?
+rm truncate.img
+
+###############################################################
 # check rename
 ###############################################################
 begin "rename"
