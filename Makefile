@@ -1,7 +1,7 @@
-VERSION=0.0.8
+VERSION=0.1.0
 DISTNAME=omfsprogs-$(VERSION)
 DISTFILES=*.[ch] Makefile README COPYING
-TESTFILES=test/*.[ch] test/Makefile
+TESTFILES=test/*.[ch] test/Makefile test/*.sh
 
 COMMON_SRCS=crc.c omfs.c dirscan.c stack.c io.c
 COMMON_OBJS=$(COMMON_SRCS:.c=.o)
