@@ -153,6 +153,9 @@ static void move_file(check_context_t *ctx, u64 dest_dir)
 
 void fix_problem(check_error_t error, check_context_t *ctx)
 {
+	if (ctx->config->is_quiet)
+		return;
+
 	sad_print(output_strings[error], ctx);
 
 	switch (error)

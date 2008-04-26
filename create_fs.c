@@ -56,7 +56,7 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 		.magic = swap_be32(OMFS_MAGIC),
 		.blocksize = swap_be32(block_size),
 		.mirrors = swap_be32(2),
-		.sys_blocksize = swap_be32(block_size/4), // ??
+		.sys_blocksize = swap_be32(2048), 
 	};
 
 	omfs_root_t root = 

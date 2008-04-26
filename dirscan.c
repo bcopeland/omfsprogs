@@ -34,8 +34,9 @@ int traverse (dirscan_t *d, dirscan_entry_t *entry)
 {
 	omfs_inode_t *ino, *tmp;
 	dirscan_entry_t *enew;
+	int res;
 
-	int res = d->visit(d, entry, d->user_data);
+	d->visit_error = d->visit(d, entry, d->user_data);
 
 	ino = entry->inode;
 	
@@ -106,9 +107,10 @@ int dirscan_begin(omfs_info_t *info, int (*visit)(dirscan_t *,
 		goto error;
 	res = traverse(d, _create_entry(root_ino, 0, 0, ~0, 
 			swap_be64(info->root->root_dir)));
+
 	dirscan_end(d);
 
-	return 0;
+	return !d->visit_error;
 
 error:
 	if (d) free(d);

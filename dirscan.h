@@ -18,6 +18,7 @@ struct dirscan
 	omfs_info_t *omfs_info;    /* omfs lib context */
 	int (*visit) (struct dirscan *, struct dirscan_entry *, void*);
 	void *user_data;
+	int visit_error;
 }; 
 
 typedef struct dirscan dirscan_t;

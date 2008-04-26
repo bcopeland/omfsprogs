@@ -85,15 +85,18 @@ int check_bitmap(check_context_t *ctx)
 		if (ctx->bitmap[i] != ctx->visited[i])
 		{
 			is_ok = 0;
-			printf("Wrong bitmap byte at %d (%02x, %02x)\n", i, 
-					ctx->bitmap[i], ctx->visited[i]);
+			if (!ctx->config->is_quiet)
+			{
+				printf("Wrong bitmap byte at %d (%02x,%02x)\n", 
+					i, ctx->bitmap[i], ctx->visited[i]);
+			}
 		}
 	}
 	if (!is_ok) 
 	{
 		fix_problem(E_BITMAP, ctx);
 	}
-	return 0;
+	return is_ok;
 }
 
 void visit_extents(check_context_t *ctx)
@@ -170,10 +173,12 @@ int check_inode(check_context_t *ctx)
 	if (!check_header((u8 *)inode)) 
 	{
 		fix_problem(E_HEADER_XOR, ctx);
+		ret = 0;
 	}
 	if (!check_crc((u8 *)inode)) 
 	{
 		fix_problem(E_HEADER_CRC, ctx);
+		ret = 0;
 	}
 	if (swap_be64(inode->head.self) != ctx->block)
 	{
@@ -200,28 +205,18 @@ int check_inode(check_context_t *ctx)
 
 static int on_node(dirscan_t *d, dirscan_entry_t *entry, void *user)
 {
-	char *name = escape(entry->inode->name);
 	check_context_t *ctx = (check_context_t *) user;
-
-	printf("inode: %*c%s%c %llx %d %d %llx %llx\n", 
-		entry->level*2, ' ', name,
-		(entry->inode->type == OMFS_DIR) ? '/' : ' ',
-		swap_be64(entry->inode->head.self), entry->hindex,
-		swap_be16(entry->inode->head.crc), 
-		entry->parent, entry->block); 
-	free(name);
 
 	ctx->current_inode = entry->inode;
 	ctx->block = entry->block;
 	ctx->parent = entry->parent;
 	ctx->hash = entry->hindex;
-	check_inode(ctx);
-
-	return 0;
+	return check_inode(ctx);
 }
 
-int check_fs(FILE *fp)
+int check_fs(FILE *fp, check_fs_config_t *config)
 {
+	int res;
 	check_context_t ctx;
 	int bsize;
 	omfs_super_t super;
@@ -232,14 +227,16 @@ int check_fs(FILE *fp)
 		.root = &root
 	};
 
+	ctx.config = config;
+
 	if (omfs_read_super(fp, &super))
 	{
-		fix_problem(E_READ_SUPER, 0);
+		fix_problem(E_READ_SUPER, &ctx);
 		return 0;
 	}
 	if (omfs_read_root_block(fp, &super, &root))
 	{
-		fix_problem(E_READ_ROOT, 0);
+		fix_problem(E_READ_ROOT, &ctx);
 		return 0;
 	}
 
@@ -248,16 +245,21 @@ int check_fs(FILE *fp)
 	bsize = (swap_be64(info.super->num_blocks) + 7) / 8;
 	ctx.visited = calloc(1, bsize);
 
-	if (dirscan_begin(&info, on_node, &ctx) != 0)
+	/* FIXME error codes are all over the place. */
+	res = dirscan_begin(&info, on_node, &ctx);
+
+	if (res < 0)
 	{
-		fix_problem(E_SCAN, 0);
+		fix_problem(E_SCAN, &ctx);
 		return 0;
 	}
+	if (res != 0)
+		return 0;
 
-	check_bitmap(&ctx);
+	res = check_bitmap(&ctx);
 	
 	if (ctx.bitmap) 
 		free(ctx.bitmap);
 	free(ctx.visited);
-	return 1;
+	return res;
 }

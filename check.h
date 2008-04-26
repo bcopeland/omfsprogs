@@ -4,6 +4,11 @@
 #include "config.h"
 #include "omfs.h"
 
+typedef struct _check_fs_config
+{
+	int is_quiet;
+} check_fs_config_t;
+
 typedef enum 
 {
 	E_NONE,
@@ -31,6 +36,7 @@ typedef enum
 
 typedef struct check_context
 {
+	check_fs_config_t *config;	
 	u8 *bitmap;
 	u8 *visited;
 	omfs_inode_t *current_inode;
@@ -40,7 +46,7 @@ typedef struct check_context
 	int hash;
 } check_context_t;
 
-int check_fs(FILE *fp);
+int check_fs(FILE *fp, check_fs_config_t *config);
 int check_fix(check_context_t *fix, check_error_t error_code);
 
 #endif

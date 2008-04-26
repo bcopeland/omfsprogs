@@ -2,6 +2,7 @@
  *  Filesystem check for OMFS
  */
 #include <stdlib.h>
+#include <getopt.h>
 #include "config.h"
 #include "omfs.h"
 #include "dirscan.h"
@@ -10,26 +11,51 @@
 int main(int argc, char *argv[])
 {
 	FILE *fp;
+	char *dev;
 
-	if (argc < 2)
+	check_fs_config_t config = {
+		.is_quiet = 0,
+	};
+
+	while (1) 
 	{
-		fprintf(stderr, "Usage: %s <device>\n", argv[0]);
+		int c;
+
+		c = getopt(argc, argv, "q");
+		if (c == -1)
+			break;
+
+		switch(c)
+		{
+			case 'q':
+				config.is_quiet = 1;
+				break;
+		}
+	}
+
+	if (argc - optind < 1)
+	{
+		fprintf(stderr, "Usage: %s [options] <device>\n", argv[0]);
 		exit(1);
 	}
 
-	fp = fopen(argv[1], "r+");
+	dev = argv[optind];
+
+	fp = fopen(dev, "r+");
 	if (!fp)
 	{
 		perror("omfsck: ");
 		exit(2);
 	}
 
-	if (!check_fs(fp))
+	if (!check_fs(fp, &config))
 	{
 		fclose(fp);
 		exit(3);
 	}
 	fclose(fp);
-	printf("File system check successful\n");
+
+	if (!config.is_quiet)
+		printf("File system check successful\n");
 	return 0;
 }

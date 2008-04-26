@@ -15,7 +15,7 @@ MKOMFS_OBJS=$(MKOMFS_SRCS:.c=.o) $(COMMON_OBJS)
 OMFSDUMP_SRCS=omfsdump.c dump.c
 OMFSDUMP_OBJS=$(OMFSDUMP_SRCS:.c=.o) $(COMMON_OBJS)
 
-CFLAGS=-g -Wall -Wpadded
+CFLAGS=-g -Wall -Wpadded -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 
 all: omfsck mkomfs omfsdump
 
