@@ -1,11 +1,39 @@
 README for omfsprogs 
 Bob Copeland <me@bobcopeland.com>
 
-This package contains utilities for manipulating OMFS filesystems.
-These programs are very beta.  Watch out.
+This package contains utilities for manipulating OMFS filesystems, 
+and a small test suite.
 
-omfsck: Consistency checker for the filesystem.  Only a few errors may be 
-fixed at this time, and then only by deleting them wholesale.
+omfsck 
+~~~~~~
+Omfsck is the filesystem consistency checker.
 
-mkomfs: Makes a simple root directory filesystem on a device or disk image.
+Running omfsck will check the disk for errors, and prompt before 
+correcting them.
+
+Usage:
+ $ omfsck /path/to/device
+
+omfsdump
+~~~~~~~~
+Omfsdump displays the contents of an OMFS filesystem along with various
+information.
+
+Usage:
+ $ omfsdump /path/to/device
+
+mkomfs
+~~~~~~
+Mkomfs makes a simple root directory filesystem on a device or disk image.
+
+Usage:
+  $ mkomfs [options] /path/to/device
+
+Where options is zero or more of:
+
+ -b	set FS block size (defaults to 8192).  No size smaller than 2048
+        should be used.
+ -c 	set cluster size in blocks (defaults to 8).  This is the normal
+	allocation size for a file.
+ -x	clear the device when initializing (defaults to off).
 
