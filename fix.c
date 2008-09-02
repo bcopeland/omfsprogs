@@ -57,7 +57,7 @@ omfs_inode_t *find_node(check_context_t *ctx, int *is_parent)
 	{
 		omfs_release_inode(inode);
 		inode = omfs_get_inode(ctx->omfs_info, swap_be64(*chain_ptr));
-		chain_ptr = &inode->sibling;
+		chain_ptr = &inode->i_sibling;
 	}
 
 	if (*chain_ptr == ~0)
@@ -75,7 +75,7 @@ static u64 *get_entry(struct omfs_inode *inode, int hash, int is_parent)
 	if (is_parent)
 		entry = (u64 *) ((u8 *) inode + OMFS_DIR_START) + hash;
 	else
-		entry = &inode->sibling;
+		entry = &inode->i_sibling;
 	return entry;
 }
 
@@ -120,21 +120,21 @@ static void move_file(check_context_t *ctx, u64 dest_dir)
 		return;
 	}
 	entry = get_entry(source, ctx->hash, is_parent);
-	*entry = ctx->current_inode->sibling;
+	*entry = ctx->current_inode->i_sibling;
 	res = omfs_write_inode(ctx->omfs_info, source);
 	omfs_release_inode(source);
 	if (res)
 		perror("omfsck");
 
 	dest = omfs_get_inode(ctx->omfs_info, dest_dir);
-	if (dest->type != OMFS_DIR)
+	if (dest->i_type != OMFS_DIR)
 	{
 		printf("Huh, tried to move it to a non-dir.. oh well.\n");
 		return;
 	}
-	hash = omfs_compute_hash(ctx->omfs_info, ctx->current_inode->name);
+	hash = omfs_compute_hash(ctx->omfs_info, ctx->current_inode->i_name);
 	entry = get_entry(dest, hash, 1);
-	ctx->current_inode->sibling = *entry;
+	ctx->current_inode->i_sibling = *entry;
 	*entry = swap_be64(ctx->block);
 	res = omfs_write_inode(ctx->omfs_info, dest);
 	if (res)
@@ -198,7 +198,8 @@ void fix_problem(check_error_t error, check_context_t *ctx)
 		if (prompt_yesno("Rebuild?"))
 		{
 			printf("Okay writing computed bitmap.\n");
-			omfs_write_bitmap(ctx->omfs_info, ctx->visited);
+			ctx->omfs_info->bitmap->bmap = ctx->visited;
+			omfs_flush_bitmap(ctx->omfs_info);
 		}
 		else
 			printf("Skipping.\n");

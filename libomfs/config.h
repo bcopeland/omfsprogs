@@ -1,17 +1,23 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
+#include <inttypes.h>
+
 typedef unsigned char u8;
-typedef unsigned short u16;
-typedef unsigned int u32;
-typedef unsigned long long u64;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
 
 typedef char s8;
-typedef short s16;
-typedef int s32;
-typedef long long s64;
+typedef int16_t s16;
+typedef int32_t s32;
+typedef int64_t s64;
 
-#if 0
+typedef u64 __be64;
+typedef u32 __be32;
+typedef u16 __be16;
+
+#if __BYTE_ORDER == __BIG_ENDIAN
 #define swap_be64(a) (a)
 #define swap_be32(a) (a)
 #define swap_be16(a) (a)

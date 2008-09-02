@@ -41,9 +41,9 @@ int traverse (dirscan_t *d, dirscan_entry_t *entry)
 	ino = entry->inode;
 	
 	/* push next sibling all then all children */
-	if (ino->sibling != ~0)
+	if (ino->i_sibling != ~0)
 	{
-		tmp = omfs_get_inode(d->omfs_info, swap_be64(ino->sibling));
+		tmp = omfs_get_inode(d->omfs_info, swap_be64(ino->i_sibling));
 		if (!tmp) 
 		{
 			res = -1;
@@ -51,15 +51,15 @@ int traverse (dirscan_t *d, dirscan_entry_t *entry)
 		}
 
 		enew = _create_entry(tmp, entry->level, entry->hindex,
-				entry->parent, swap_be64(ino->sibling));
+				entry->parent, swap_be64(ino->i_sibling));
 		traverse(d, enew);
 	}
-	if (ino->type == OMFS_DIR)
+	if (ino->i_type == OMFS_DIR)
 	{
 		int i;
 		u64 *ptr = (u64*) ((u8*) ino + OMFS_DIR_START);
 
-		int num_entries = (swap_be32(ino->head.body_size) + 
+		int num_entries = (swap_be32(ino->i_head.h_body_size) + 
 			sizeof(omfs_header_t) - OMFS_DIR_START) / 8;
 
 		for (i=0; i<num_entries; i++, ptr++)
@@ -102,11 +102,11 @@ int dirscan_begin(omfs_info_t *info, int (*visit)(dirscan_t *,
 	d->visit = visit;
 	d->user_data = user_data;
 
-	root_ino = omfs_get_inode(info, swap_be64(info->root->root_dir));
+	root_ino = omfs_get_inode(info, swap_be64(info->root->r_root_dir));
 	if (!root_ino)
 		goto error;
 	res = traverse(d, _create_entry(root_ino, 0, 0, ~0, 
-			swap_be64(info->root->root_dir)));
+			swap_be64(info->root->r_root_dir)));
 
 	dirscan_end(d);
 
