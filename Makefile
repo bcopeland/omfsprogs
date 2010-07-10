@@ -1,6 +1,6 @@
 VERSION=0.1.0
 DISTNAME=omfsprogs-$(VERSION)
-DISTFILES=*.[ch] Makefile README COPYING libs/*.[ch] libs/Makefile
+DISTFILES=*.[ch] Makefile README COPYING libomfs/*.[ch] libomfs/Makefile
 TESTFILES=test/*.[ch] test/Makefile test/*.sh
 
 COMMON_SRCS=dirscan.c stack.c io.c
