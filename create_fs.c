@@ -83,6 +83,7 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 	info.super = &super;
 	info.root = &root;
 	info.bitmap = &bitmap;
+	info.swap = 0;
 
 	// super block
 	omfs_write_super(&info);
@@ -121,6 +122,7 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 	// going to be set; the first available cluster has to take
 	// into account the size of the free space bitmap.
 	int bitmap_size = (swap_be64(super.s_num_blocks) + 7)/8;
+	int dirty_size = (bitmap_size + 7)/8;
 	int first_blk = BITMAP_BLK + (bitmap_size + 
 		swap_be32(super.s_blocksize)-1) / swap_be32(super.s_blocksize);
 
@@ -130,7 +132,10 @@ int create_fs(FILE *fp, u64 sectors, fs_config_t *config)
 	{
 		bitmap.bmap[i/8] |= 1<<(i & 7);
 	}
+
+	bitmap.dirty = malloc(dirty_size);
+	memset(bitmap.dirty, 0xff, dirty_size);
 	omfs_flush_bitmap(&info);
-	
+
 	return 1;
 }
