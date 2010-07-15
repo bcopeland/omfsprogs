@@ -1,6 +1,7 @@
 VERSION=0.1.0
 DISTNAME=omfsprogs-$(VERSION)
-DISTFILES=*.[ch] Makefile README COPYING libomfs/*.[ch] libomfs/Makefile
+DISTFILES=*.[ch] Makefile README COPYING
+LIBFILES=libomfs/*.[ch] libomfs/Makefile
 TESTFILES=test/*.[ch] test/Makefile test/*.sh
 
 COMMON_SRCS=dirscan.c stack.c io.c
@@ -20,23 +21,29 @@ LIBS=-Llibomfs -lomfs
 
 all: omfsck mkomfs omfsdump
 
-omfsck: $(OMFSCK_OBJS)
+libomfs: .PHONY
+	cd libomfs && $(MAKE)
+
+omfsck: $(OMFSCK_OBJS) libomfs
 	gcc -o omfsck $(OMFSCK_OBJS) $(LIBS)
 
-mkomfs: $(MKOMFS_OBJS)
+mkomfs: $(MKOMFS_OBJS) libomfs
 	gcc -o mkomfs $(MKOMFS_OBJS) $(LIBS)
 
-omfsdump: $(OMFSDUMP_OBJS)
+omfsdump: $(OMFSDUMP_OBJS) libomfs
 	gcc -o omfsdump $(OMFSDUMP_OBJS) $(LIBS)
 
 clean:
 	$(RM) omfsck mkomfs *.o
+	cd libomfs && $(MAKE) clean
 	cd test && $(MAKE) clean
 
 dist: clean
 	mkdir $(DISTNAME)
+	mkdir $(DISTNAME)/libomfs
 	mkdir $(DISTNAME)/test
 	cp $(DISTFILES) $(DISTNAME)
+	cp $(LIBFILES) $(DISTNAME)/libomfs
 	cp $(TESTFILES) $(DISTNAME)/test
 	tar czvf $(DISTNAME).tar.gz $(DISTNAME)
 	$(RM) -r $(DISTNAME)
@@ -47,3 +54,5 @@ distcheck: dist
 	cd $(DISTNAME) && $(MAKE) && \
 	cd test && $(MAKE)
 	$(RM) -r build
+
+.PHONY:
