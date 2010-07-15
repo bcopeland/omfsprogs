@@ -83,6 +83,26 @@ assert $?
 rm nblock.img
 
 ###############################################################
+# bad cluster size
+###############################################################
+begin "mount cluster size check"
+cp clean.img bad_cluster.img
+echo -n '}' | dd of=bad_cluster.img seek=4156 bs=1 count=1 conv=notrunc 2>/dev/null
+mount bad_cluster.img
+assert $?
+rm bad_cluster.img
+
+###############################################################
+# bad bitmap pointer
+###############################################################
+begin "mount bitmap pointer check"
+cp clean.img bad_bitmap.img
+echo -n '}' | dd of=bad_bitmap.img seek=4145 bs=1 count=1 conv=notrunc 2>/dev/null
+mount bad_bitmap.img
+assert $?
+rm bad_bitmap.img
+
+###############################################################
 # check create
 ###############################################################
 begin "create"
