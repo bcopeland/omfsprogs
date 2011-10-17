@@ -29,7 +29,7 @@ static void expand_custom(char ch, check_context_t *ctx)
 		fputc('$', stdout);
 		break;
 	case 'I':
-		printf("%llx", swap_be64(ctx->current_inode->i_head.h_self));
+		printf("%" PRIx64, swap_be64(ctx->current_inode->i_head.h_self));
 		break;
 	case 'F':
 		s = escape(ctx->current_inode->i_name);
@@ -40,7 +40,7 @@ static void expand_custom(char ch, check_context_t *ctx)
 		printf("%d", ctx->hash);
 		break;
 	case 'B':
-		printf("%llx", ctx->block);
+		printf("%" PRIx64, ctx->block);
 		break;
 	}
 }

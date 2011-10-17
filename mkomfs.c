@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <inttypes.h>
 
 #include "config.h"
 #include "disksize.h"
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	printf("Creating a new fs on dev %s (%lld blks)\n", dev, size/512);
+	printf("Creating a new fs on dev %s (%" PRIu64 " blks)\n", dev, size/512);
 
 	printf("Warning: this could kill some important data; Are you sure? ");
 	char ch = getchar();

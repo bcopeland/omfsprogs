@@ -15,7 +15,8 @@ static int on_node(dirscan_t *d, dirscan_entry_t *entry, void *user)
 {
 	char *name = escape(entry->inode->i_name);
 
-	printf("inode: %*c%s%c s:%llx h:%d c:%d p:%llx b:%llx\n", 
+	printf("inode: %*c%s%c s:%" PRIx64 " h:%d c:%d p:%" PRIx64
+           " b:%" PRIx64 "\n",
 		entry->level*2, ' ', name,
 		(entry->inode->i_type == OMFS_DIR) ? '/' : ' ',
 		swap_be64(entry->inode->i_head.h_self), entry->hindex,
@@ -44,8 +45,8 @@ int dump_fs(FILE *fp)
 	}
 	printf("Filesystem volume name: %s\n", super.s_name);
 	printf("Filesystem magic number: 0x%x\n", swap_be32(super.s_magic));
-	printf("First block: 0x%llx\n", swap_be64(super.s_root_block));
-	printf("Block count: 0x%llx\n", swap_be64(super.s_num_blocks));
+	printf("First block: 0x%" PRIx64 "\n", swap_be64(super.s_root_block));
+	printf("Block count: 0x%" PRIx64 "\n", swap_be64(super.s_num_blocks));
 	printf("Block size: %d\n", swap_be32(super.s_blocksize));
 	printf("Inode block size: %d\n", swap_be32(super.s_sys_blocksize));
 	printf("Mirrors: %d\n", swap_be32(super.s_mirrors));
