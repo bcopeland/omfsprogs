@@ -1,6 +1,6 @@
 /*  mkomfs.c - Create an OMFS filesystem
  *  
- *  GPL blah blah
+ *  Licensed under GPL version 2 or later.
  */
 
 #include <stdio.h>
